@@ -15,22 +15,32 @@ public class PlayerMovement : MonoBehaviour
     public float turnSmoothTime = 0.1f;
     private float turnSmoothVelocity;
 
+    [Header("Audio")]
+    public AudioClip gunshotSound; //
+    private AudioSource audioSource;
+
     [Header("Aiming")]
     public CinemachineFreeLook aimCamera; // Niþan kamerasý referansý
     public bool isAiming = false;
     private int aimPriority = 20; // Niþan alýrken kameranýn önceliði (normal kameradan (10) yüksek olmalý)
 
-    [Header("Shooting")] // <-- YENÝ BÝR BAÞLIK EKLEYEBÝLÝRSÝN
-    public LayerMask aimLayerMask; // <-- HATA VEREN SATIR BU, BUNU EKLE
+    [Header("Shooting")] 
+    public LayerMask aimLayerMask; 
+    public GameObject hitEffectPrefab;
 
     [Header("Physics (Gravity)")]
     private Vector3 playerVelocity;
     private bool isGrounded;
     public float gravityValue = -9.81f;
 
+
+
+
     void Start()
     {
         controller = GetComponent<CharacterController>();
+ 
+        audioSource = GetComponent<AudioSource>(); 
 
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
@@ -91,6 +101,7 @@ public class PlayerMovement : MonoBehaviour
                 Vector3 moveDir = Quaternion.Euler(0f, targetAngle, 0f) * Vector3.forward;
                 controller.Move(moveDir.normalized * speed * Time.deltaTime);
             }
+
         }
 
         // 5. Yerçekimini Uygula
@@ -98,8 +109,10 @@ public class PlayerMovement : MonoBehaviour
         controller.Move(playerVelocity * Time.deltaTime);
 
         // 6. ATEÞ ETME (YENÝ KOD)
+
         if (Input.GetMouseButtonDown(0)) // Sol fare tuþuna basýldýðýnda
         {
+            audioSource.PlayOneShot(gunshotSound);  
             Debug.DrawRay(cam.position, cam.forward * 100f, Color.red, 1.0f);
 
             if (Physics.Raycast(cam.position, cam.forward, out RaycastHit hitInfo, 100f, aimLayerMask))
@@ -110,6 +123,12 @@ public class PlayerMovement : MonoBehaviour
                 // Eðer varsa (yani vurduðumuz þey bir düþmansa)
                 if (enemy != null)
                 {
+                    // EFEKTÝ OLUÞTUR
+                    // Instantiate(prefab, position, rotation);
+                    // hitInfo.point = merminin çarptýðý tam nokta
+                    // hitInfo.normal = merminin çarptýðý yüzeyin baktýðý yön (efektin dýþa doðru bakmasý için)
+                    Instantiate(hitEffectPrefab, hitInfo.point, Quaternion.LookRotation(hitInfo.normal));
+
                     // Düþmanýn TakeDamage fonksiyonunu çaðýr ve 25 hasar ver
                     enemy.TakeDamage(25);
                 }
